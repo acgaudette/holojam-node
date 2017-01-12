@@ -1,7 +1,7 @@
 {
   "name": "holojam-node",
   "version": "0.1.0",
-  "description": "Holojam dynamic server/translation package",
+  "description": "Lightweight and flexible Holojam networking/translation package",
   "main": "index.js",
   "dependencies": {
     "dgram": "^1.0.1",

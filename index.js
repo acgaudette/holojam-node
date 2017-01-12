@@ -64,7 +64,7 @@ var Holojam = function(
    if(sink){
       udp.on('message',(buffer,info) => {
          //Route
-         this.Send(buffer);
+         this.SendRaw(buffer);
          if(web)this.SendToWeb(this.Decode(buffer));
 
          //Update events
@@ -75,7 +75,10 @@ var Holojam = function(
    }
 
    //Emit updates
-   this.Send = (buffer) => {
+   this.Send = (json) => {
+      this.SendRaw(this.Encode(json));
+   };
+   this.SendRaw = (buffer) => {
       if(!emitter)return;
 
       udp.send(buffer,0,buffer.length,
@@ -100,7 +103,7 @@ var Holojam = function(
             client.on('relay',(json) => {
                this.SendToWeb(json); //Route
                //Feed web data into the normal stream
-               this.Send(this.Encode(json));
+               this.Send(json);
                //Update event
                this.emit('update-web',json);
                packetsReceived[1]++;
