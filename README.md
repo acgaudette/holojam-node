@@ -2,7 +2,7 @@
 Enables rapid, straightforward networking with the Holojam virtual reality platform
 
 ```
-npm install holojam-node
+npm install holojam-node --save
 ```
 Requires the provided protocol descriptor `deprecated.proto` in the execution directory
 
