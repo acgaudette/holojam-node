@@ -1,0 +1,30 @@
+{
+  "name": "holojam-node",
+  "version": "0.1.0",
+  "description": "Holojam dynamic server/translation package",
+  "main": "index.js",
+  "dependencies": {
+    "dgram": "^1.0.1",
+    "protocol-buffers": "^3.2.1",
+    "socket.io": "^1.7.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "holojam",
+    "vr",
+    "virtual-reality"
+  ],
+  "homepage": "http://holojamvr.com",
+  "author": "Aaron C Gaudette <gaudetteaaron@gmail.com>",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/acgaudette/holojam-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/acgaudette/holojam-node/issues"
+  }
+}
