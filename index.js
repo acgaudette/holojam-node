@@ -5,10 +5,14 @@
 
 //Server
 const dgram = require('dgram');
+const os = require('os');
+const sizeof = require('object-sizeof');
 //Protocol
 const fs = require('fs');
-const protobuf = require('protocol-buffers');
-const protocol = protobuf(fs.readFileSync('deprecated.proto'));
+const flatbuffers = require('flatbuffers');
+const protocol = flatbuffers.compileSchema(
+   fs.readFileSync('node_modules/holojam-node/holojam.bfbs')
+);
 //Events
 const inherits = require('util').inherits;
 const EventEmitter = require('events').EventEmitter;
@@ -31,6 +35,8 @@ var Holojam = function(
    const web = mode.includes('web');
 
    var packetsSent = [0,0], packetsReceived = [0,0];
+   var bytesSent = [0,0], bytesReceived = [0,0];
+   var events = 0;
 
    //Initialize
    var udp = dgram.createSocket('udp4');
@@ -68,9 +74,18 @@ var Holojam = function(
          if(web)this.SendToWeb(this.Decode(buffer));
 
          //Update events
-         this.emit('update',protocol.Update.decode(buffer));
+         var data = this.Decode(buffer);
+         this.emit('update',data);
          this.emit('update-raw',buffer,info);
+
+         //Holojam events
+         if(data.type=='Event'){
+            this.emit(data.flakes[0].label,data.flakes[0]);
+            events++;
+         }
+
          packetsReceived[0]++;
+         bytesReceived[0] += buffer.length;
       });
    }
 
@@ -86,6 +101,7 @@ var Holojam = function(
          (error,bytes) => {if(error)throw error;}
       );
       packetsSent[0]++;
+      bytesSent[0] += buffer.length;
    };
 
    //Web
@@ -106,7 +122,9 @@ var Holojam = function(
                this.Send(json);
                //Update event
                this.emit('update-web',json);
+
                packetsReceived[1]++;
+               bytesReceived[1] += sizeof(json);
             });
          });
       }
@@ -115,22 +133,49 @@ var Holojam = function(
       this.SendToWeb = (json) => {
          if(!emitter)return;
          io.emit('update',json);
+
          packetsSent[1]++;
+         bytesSent += sizeof(json);
       };
    }
 
-   //Metrics (PPS)
+   //Protocol
+   var BuildPacket = (scope,type,flakes) => {
+      return {
+         scope: scope, origin: os.userInfo(['username']) + '@' + os.platform(),
+         type: type, flakes: flakes
+      }
+   }
+   this.BuildUpdate = (scope = 'Node', flakes) => {
+      return BuildPacket(scope,'Update',flakes);
+   }
+   this.BuildEvent = (scope = 'Node', flake) => {
+      return BuildPacket(scope,'Event',[flake]);
+   }
+   this.CreateEvent = (scope = 'Node', label = 'Event') => {
+      return BuildPacket(scope,'Event',[{label: label}]);
+   }
+
+   //Metrics
    setInterval(() => {
-      this.emit('tick',packetsSent,packetsReceived);
+      this.emit('tick',
+         packetsSent,packetsReceived,
+         bytesSent,bytesReceived,
+         [(bytesSent[0]+bytesReceived[0])/(packetsSent[0]+packetsReceived[0]),
+         (bytesSent[1]+bytesReceived[1])/(packetsSent[1]+packetsReceived[1])],
+         events
+      );
       packetsSent = [0,0]; packetsReceived = [0,0];
+      bytesSent = [0,0]; bytesReceived = [0,0];
+      events = 0;
    },1000);
 };
 inherits(Holojam,EventEmitter);
 
 //Protocol <-> JSON conversion
 Holojam.prototype.Encode = (data) => {
-   return protocol.Update.encode(data);
+   return Buffer.from(protocol.generate(data));
 };
 Holojam.prototype.Decode = (buffer) => {
-   return protocol.Update.decode(buffer);
+   return protocol.parse(data);
 };

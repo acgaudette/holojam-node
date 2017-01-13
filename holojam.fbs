@@ -1,0 +1,40 @@
+//holojam.fbs
+//Created by Aaron C Gaudette on 12.01.16
+//v0.1.0
+
+namespace Holojam.Protocol;
+
+enum PacketType:byte{
+   Update = 0, Event = 1
+}
+
+table Packet{
+   scope:string; origin:string;
+
+   type:PacketType = Update;
+   flakes:[Flake] (required);
+}
+
+table Flake{
+   label:string (required);
+
+   triples:[Vector3];
+   quads:[Vector4];
+
+   floats:[float];
+   ints:[int];
+   chars:[byte];
+
+   text:string;
+}
+
+struct Vector3{
+   x:float; y:float;
+   z:float;
+}
+struct Vector4{
+   x:float; y:float;
+   z:float; w:float;
+}
+
+root_type Packet;
