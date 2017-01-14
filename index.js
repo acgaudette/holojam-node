@@ -14,8 +14,8 @@ const protocol = flatbuffers.compileSchema(
    fs.readFileSync('node_modules/holojam-node/holojam.bfbs')
 );
 //Events
-const inherits = require('util').inherits;
 const EventEmitter = require('events').EventEmitter;
+const inherits = require('util').inherits;
 
 //Entry
 module.exports = (
@@ -34,12 +34,12 @@ var Holojam = function(
    const sink = mode.includes('full') || mode.includes('sink');
    const web = mode.includes('web');
 
-   var packetsSent = [0,0], packetsReceived = [0,0];
-   var bytesSent = [0,0], bytesReceived = [0,0];
-   var events = 0;
+   let packetsSent = [0,0], packetsReceived = [0,0];
+   let bytesSent = [0,0], bytesReceived = [0,0];
+   let events = 0;
 
    //Initialize
-   var udp = dgram.createSocket('udp4');
+   const udp = dgram.createSocket('udp4');
    if(sink)udp.bind(serverPort,serverAddress);
    EventEmitter.call(this);
 
@@ -74,7 +74,7 @@ var Holojam = function(
          if(web)this.SendToWeb(this.Decode(buffer));
 
          //Update events
-         var data = this.Decode(buffer);
+         let data = this.Decode(buffer);
          this.emit('update',data);
          this.emit('update-raw',buffer,info);
 
@@ -90,16 +90,17 @@ var Holojam = function(
    }
 
    //Emit updates
-   this.Send = (json) => {
+   this.Send = function(json){
       this.SendRaw(this.Encode(json));
    };
-   this.SendRaw = (buffer) => {
+   this.SendRaw = function(buffer){
       if(!emitter)return;
 
       udp.send(buffer,0,buffer.length,
          multicastPort,multicastAddress,
          (error,bytes) => {if(error)throw error;}
       );
+
       packetsSent[0]++;
       bytesSent[0] += buffer.length;
    };
@@ -130,7 +131,7 @@ var Holojam = function(
       }
 
       //Emit updates to web
-      this.SendToWeb = (json) => {
+      this.SendToWeb = function(json){
          if(!emitter)return;
          io.emit('update',json);
 
@@ -140,21 +141,21 @@ var Holojam = function(
    }
 
    //Protocol
-   var BuildPacket = (scope,type,flakes) => {
+
+   const BuildPacket = function(scope,type,flakes){
       return {
          scope: scope, origin: os.userInfo(['username']) + '@' + os.platform(),
          type: type, flakes: flakes
       }
    }
-   this.BuildUpdate = (scope = 'Node', flakes) => {
-      return BuildPacket(scope,'Update',flakes);
-   }
-   this.BuildEvent = (scope = 'Node', flake) => {
-      return BuildPacket(scope,'Event',[flake]);
-   }
-   this.CreateEvent = (scope = 'Node', label = 'Event') => {
-      return BuildPacket(scope,'Event',[{label: label}]);
-   }
+
+   this.BuildUpdate = (scope = 'Node', flakes) =>
+      BuildPacket(scope,'Update',flakes);
+
+   this.BuildEvent = (scope = 'Node', flake) =>
+      BuildPacket(scope,'Event',[flake]);
+   this.CreateEvent = (scope = 'Node', label = 'Event') =>
+      BuildPacket(scope,'Event',[{label: label}]);
 
    //Metrics
    setInterval(() => {
@@ -173,9 +174,5 @@ var Holojam = function(
 inherits(Holojam,EventEmitter);
 
 //Protocol <-> JSON conversion
-Holojam.prototype.Encode = (data) => {
-   return Buffer.from(protocol.generate(data));
-};
-Holojam.prototype.Decode = (buffer) => {
-   return protocol.parse(data);
-};
+Holojam.prototype.Encode = (json) => Buffer.from(protocol.generate(json));
+Holojam.prototype.Decode = (buffer) => protocol.parse(buffer);
