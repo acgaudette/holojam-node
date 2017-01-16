@@ -70,11 +70,9 @@ var Holojam = function(
    if(sink){
       udp.on('message',(buffer,info) => {
          //Route
-         this.SendRaw(buffer);
-         if(web)this.SendToWeb(this.Decode(buffer));
+         let data = this.SendRaw(buffer);
 
          //Update events
-         let data = this.Decode(buffer);
          this.emit('update',data);
          this.emit('update-raw',buffer,info);
 
@@ -90,19 +88,27 @@ var Holojam = function(
    }
 
    //Emit updates
-   this.Send = function(json){
-      this.SendRaw(this.Encode(json));
-   };
-   this.SendRaw = function(buffer){
+   const Emit = (json,buffer) => {
       if(!emitter)return;
 
       udp.send(buffer,0,buffer.length,
          multicastPort,multicastAddress,
          (error,bytes) => {if(error)throw error;}
       );
+      if(web)this.SendToWeb(json);
 
       packetsSent[0]++;
       bytesSent[0] += buffer.length;
+   }
+   this.Send = function(json){
+      let buffer = this.Encode(json);
+      Emit(json,buffer);
+      return buffer;
+   };
+   this.SendRaw = function(buffer){
+      let json = this.Decode(buffer);
+      Emit(json,buffer);
+      return json;
    };
 
    //Web
@@ -118,7 +124,6 @@ var Holojam = function(
          io.on('connection',(client) => {
             //Listen for packets back from the web
             client.on('relay',(json) => {
-               this.SendToWeb(json); //Route
                //Feed web data into the normal stream
                this.Send(json);
                //Update event
@@ -136,7 +141,7 @@ var Holojam = function(
          io.emit('update',json);
 
          packetsSent[1]++;
-         bytesSent += sizeof(json);
+         bytesSent[1] += sizeof(json);
       };
    }
 
@@ -144,9 +149,9 @@ var Holojam = function(
 
    const BuildPacket = function(scope,type,flakes){
       return {
-         scope: scope, origin: os.userInfo(['username']) + '@' + os.platform(),
+         scope: scope, origin: os.userInfo()['username'] + '@' + os.hostname(),
          type: type, flakes: flakes
-      }
+      };
    }
 
    this.BuildUpdate = (scope = 'Node', flakes) =>
@@ -162,8 +167,10 @@ var Holojam = function(
       this.emit('tick',
          packetsSent,packetsReceived,
          bytesSent,bytesReceived,
-         [(bytesSent[0]+bytesReceived[0])/(packetsSent[0]+packetsReceived[0]),
-         (bytesSent[1]+bytesReceived[1])/(packetsSent[1]+packetsReceived[1])],
+         [parseInt(
+            (bytesSent[0]+bytesReceived[0])/(packetsSent[0]+packetsReceived[0])),
+         parseInt(
+            (bytesSent[1]+bytesReceived[1])/(packetsSent[1]+packetsReceived[1]))],
          events
       );
       packetsSent = [0,0]; packetsReceived = [0,0];
