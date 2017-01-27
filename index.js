@@ -159,7 +159,7 @@ var Holojam = function(
 
    this.BuildEvent = (scope = 'Node', flake) =>
       BuildPacket(scope,'Event',[flake]);
-   this.CreateEvent = (scope = 'Node', label = 'Event') =>
+   this.BuildNotification = (scope = 'Node', label = 'Notification') =>
       BuildPacket(scope,'Event',[{label: label}]);
 
    //Metrics
