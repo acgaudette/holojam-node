@@ -11,7 +11,7 @@ const sizeof = require('object-sizeof');
 const fs = require('fs');
 const flatbuffers = require('flatbuffers');
 const protocol = flatbuffers.compileSchema(
-   fs.readFileSync('node_modules/holojam-node/holojam.bfbs')
+   fs.readFileSync(__dirname + '/holojam.bfbs')
 );
 //Events
 const EventEmitter = require('events').EventEmitter;
@@ -78,7 +78,10 @@ var Holojam = function(
 
          //Holojam events
          if(data.type=='Event'){
-            this.emit(data.flakes[0].label,data.flakes[0]);
+            this.emit(
+               data.flakes[0].label,data.flakes[0],
+               data.scope,data.origin
+            );
             events++;
          }
 

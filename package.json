@@ -5,7 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "dgram": "^1.0.1",
-    "flatbuffers": "^0.1.0",
+    "flatbuffers": "file:../3rdparty/node-flatbuffers",
     "object-sizeof": "^1.1.1",
     "socket.io": "^1.7.2"
   },

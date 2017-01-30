@@ -35,7 +35,7 @@ holojam.on('update',(json) => {
   console.log(json);
 });
 
-holojam.on('my-event',(flake) => {
+holojam.on('my-event',(flake,scope,origin) => {
    console.log(flake);
 });
 ```
