@@ -9,7 +9,7 @@ const os = require('os');
 const sizeof = require('object-sizeof');
 //Protocol
 const fs = require('fs');
-const flatbuffers = require('flatbuffers');
+const flatbuffers = require('acg-flatbuffers');
 const protocol = flatbuffers.compileSchema(
    fs.readFileSync(__dirname + '/holojam.bfbs')
 );

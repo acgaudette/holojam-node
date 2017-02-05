@@ -1,11 +1,11 @@
 {
   "name": "holojam-node",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lightweight and flexible Holojam networking/translation package",
   "main": "index.js",
   "dependencies": {
     "dgram": "^1.0.1",
-    "flatbuffers": "file:../3rdparty/node-flatbuffers",
+    "acg-flatbuffers": "^0.1.3",
     "object-sizeof": "^1.1.1",
     "socket.io": "^1.7.2"
   },
