@@ -88,7 +88,7 @@ var Holojam = function(
 
          //Update events
          if(data.type=='Update'){
-            this.emit('update',data);
+            this.emit('update',data.flakes,data.scope,data.origin);
             this.emit('update-raw',buffer,info);
          //Holojam event
          }else if(data.type=='Event'){
@@ -145,7 +145,7 @@ var Holojam = function(
                if(emitter)this.Send(json);
                //Update event
                if(json.type=='Update')
-                  this.emit('update',json);
+                  this.emit('update',json.flakes,json.scope,json.origin);
                //Holojam event
                else if(json.type=='Event'){
                   this.emit(

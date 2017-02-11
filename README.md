@@ -26,8 +26,8 @@ var flakes = [{
 
 holojam.Send(holojam.BuildUpdate('my-app',flakes));
 
-holojam.on('update',(json) => {
-  console.log(json);
+holojam.on('update',(flakes,scope,origin) => {
+  console.log(flakes);
 });
 
 var flake = {
@@ -46,7 +46,7 @@ holojam.on('my-event',(flake,scope,origin) => {
 ## Advanced:
 Additional functions:
 
-`SendRaw(buffer)`, `SendToWeb(json)`, `Encode(json)`, `Decode(buffer)`
+`SendRaw(buffer)`, `SendToWeb(json)`, `Encode(json)`, `Decode(buffer)`, `BuildNotification(scope,label)`
 
 Additional (node) event:
 
