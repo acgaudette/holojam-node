@@ -23,21 +23,24 @@ var flakes = [{
    label: 'my-flake-1',
    ...
 }]
-holojam.Send(holojam.BuildUpdate('my-app',flakes));
 
-var flake = {
-   label: 'my-event',
-   ...
-}
-holojam.Send(holojam.BuildEvent('my-app',flake));
+holojam.Send(holojam.BuildUpdate('my-app',flakes));
 
 holojam.on('update',(json) => {
   console.log(json);
 });
 
+var flake = {
+   label: 'my-event',
+   ...
+}
+
+holojam.Send(holojam.BuildEvent('my-app',flake));
+
 holojam.on('my-event',(flake,scope,origin) => {
    console.log(flake);
 });
+
 ```
 
 ## Advanced:
@@ -45,9 +48,9 @@ Additional functions:
 
 `SendRaw(buffer)`, `SendToWeb(json)`, `Encode(json)`, `Decode(buffer)`
 
-Additional (node) events:
+Additional (node) event:
 
-`'update-raw',(buffer,info)`, `'update-web',(json)`
+`'update-raw',(buffer,info)`
 
 As shown above, Holojam events and notifications are converted to node events for ease of use.
 
@@ -58,6 +61,6 @@ Read metrics with the `'tick'` event, which fires every second: packets sent, pa
 Full constructor with defaults:
 
 ```javascript
-const holojam = require('holojam-node')(['full','web'],'0.0.0.0',9592,'239.0.2.4',9591,9593);
+const holojam = require('holojam-node')(['full','web'],'0.0.0.0',9593,9592,9591,'239.0.2.4');
 ```
-(Mode, server address, server port, UDP multicast address, multicast port, web port)
+(Mode, server address, web port, upstream port, downstream port, multicast address)
