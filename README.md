@@ -2,7 +2,7 @@
 Enables rapid, straightforward networking with the Holojam virtual reality platform
 
 ```
-npm install holojam-node --save
+npm install holojam-node
 ```
 
 ### Bare Minimum:
