@@ -183,7 +183,7 @@ var Holojam = function(
 
   // Protocol
 
-  const BuildPacket = function(scope, type, flakes){
+  const BuildNugget = function(scope, type, flakes){
     return {
       scope: scope, origin: os.userInfo()['username'] + '@' + os.hostname(),
       type: type, flakes: flakes
@@ -191,12 +191,12 @@ var Holojam = function(
   }
 
   this.BuildUpdate = (scope = 'Node', flakes) =>
-    BuildPacket(scope, 'UPDATE', flakes);
+    BuildNugget(scope, 'UPDATE', flakes);
 
   this.BuildEvent = (scope = 'Node', flake) =>
-    BuildPacket(scope, 'EVENT', [flake]);
+    BuildNugget(scope, 'EVENT', [flake]);
   this.BuildNotification = (scope = 'Node', label = 'Notification') =>
-    BuildPacket(scope, 'EVENT', [{label: label}]);
+    BuildNugget(scope, 'EVENT', [{label: label}]);
 
   // Metrics
   setInterval(() => {
