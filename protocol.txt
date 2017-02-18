@@ -1,0 +1,2 @@
+(dev):
+  flatc -b -n -o . holojam.fbs --schema

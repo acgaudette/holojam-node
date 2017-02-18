@@ -19,7 +19,7 @@ const inherits = require('util').inherits;
 
 //Entry
 module.exports = (
-   mode = ['full','web'],
+   mode = ['relay','web'],
    serverAddress = '0.0.0.0',
    webPort = 9593, upstreamPort = 9592, downstreamPort = 9591,
    multicastAddress = '239.0.2.4'
@@ -30,12 +30,13 @@ module.exports = (
 var Holojam = function(
    mode,serverAddress,webPort,upstreamPort,downstreamPort,multicastAddress
 ){
-   const emitter = mode.includes('full') || mode.includes('emitter');
-   const sink = mode.includes('full') || mode.includes('sink');
+   const relay = mode.includes('relay'); //Override emitter + sink option
+   const sending = relay || mode.includes('emitter');
+   const receiving = relay || mode.includes('sink');
    const web = mode.includes('web');
 
    let sendAddress = serverAddress, sendPort = upstreamPort; //Unicast
-   if(emitter && sink) //Multicast
+   if(relay) //Multicast
       sendAddress = multicastAddress, sendPort = downstreamPort;
 
    let packetsSent = [0,0], packetsReceived = [0,0];
@@ -46,32 +47,32 @@ var Holojam = function(
    const udp = dgram.createSocket({
       type: 'udp4', reuseAddr: true
    });
-   if(emitter && sink)
+   if(relay)
       udp.bind(upstreamPort,serverAddress);
-   else if(sink)
+   else if(receiving)
       udp.bind(downstreamPort,() => udp.addMembership(multicastAddress));
    EventEmitter.call(this);
 
-   if(!emitter && !sink)
+   if(!sending && !receiving)
       throw new Error('Invalid mode passed to constructor!'
-         + ' (Try \'full\', \'emitter\', or \'sink\')');
+         + ' (Try \'relay\', \'emitter\', or \'sink\')');
 
    console.log('Holojam: Initialized,',
-      (emitter && sink)? 'full server':
-      emitter? 'emitter':'sink',
-      web? '(with web relay)':'(without web relay)'
+      relay? 'relay' : (!relay && sending && receiving)? 'emitter + sink':
+      sending? 'emitter' : 'sink',
+      web? '(with web support)':'(without web support)'
    );
 
-   if(emitter)
+   if(sending)
       console.log('Holojam: Sending to',
-         (sink? multicastAddress + ':' + downstreamPort:
+         (relay? multicastAddress + ':' + downstreamPort:
          serverAddress + ':' + upstreamPort));
 
    //Listen
    udp.on('listening',() => {
-      if(sink)
+      if(receiving)
          console.log('Holojam: Listening',
-            (emitter? 'at ' + serverAddress + ':' + upstreamPort:
+            (relay? 'at ' + serverAddress + ':' + upstreamPort:
             'to ' + multicastAddress + ':' + downstreamPort));
    });
    udp.on('error',(error) => {
@@ -80,18 +81,17 @@ var Holojam = function(
       udp.close();
    });
 
-   if(sink){
+   if(receiving){
       udp.on('message',(buffer,info) => {
-         //Route if full
-         var data = emitter?
+         var data = relay? //Route if relay
             this.SendRaw(buffer):this.Decode(buffer);
 
          //Update events
-         if(data.type=='Update'){
+         if(data.type=='UPDATE'){
             this.emit('update',data.flakes,data.scope,data.origin);
             this.emit('update-raw',buffer,info);
          //Holojam event
-         }else if(data.type=='Event'){
+         }else if(data.type=='EVENT'){
             this.emit(
                data.flakes[0].label,data.flakes[0],
                data.scope,data.origin
@@ -105,27 +105,27 @@ var Holojam = function(
    }
 
    //Emit nuggets
-   const Emit = (json,buffer) => {
-      if(!emitter)return;
+   const Emit = (nugget,buffer) => {
+      if(!sending)return;
 
       udp.send(buffer,0,buffer.length,
          sendPort,sendAddress,
          (error,bytes) => {if(error)throw error;}
       );
-      if(web)this.SendToWeb(json);
+      if(web)this.SendToWeb(nugget);
 
       packetsSent[0]++;
       bytesSent[0] += buffer.length;
    }
-   this.Send = function(json){
-      let buffer = this.Encode(json);
-      Emit(json,buffer);
+   this.Send = function(nugget){
+      let buffer = this.Encode(nugget);
+      Emit(nugget,buffer);
       return buffer;
    };
    this.SendRaw = function(buffer){
-      let json = this.Decode(buffer);
-      Emit(json,buffer);
-      return json;
+      let nugget = this.Decode(buffer);
+      Emit(nugget,buffer);
+      return nugget;
    };
 
    //Web
@@ -137,37 +137,37 @@ var Holojam = function(
       }});
       console.log('Holojam: Web server on *:' + webPort);
 
-      if(sink){
+      if(receiving){
          io.on('connection',(client) => {
             //Listen for packets back from the web
-            client.on('relay',(json) => {
-               //Feed web data into the normal stream (if full)
-               if(emitter)this.Send(json);
+            client.on('relay',(nugget) => {
+               //Feed web data into the normal stream (if relay)
+               if(relay)this.Send(nugget);
                //Update event
-               if(json.type=='Update')
-                  this.emit('update',json.flakes,json.scope,json.origin);
+               if(nugget.type=='UPDATE')
+                  this.emit('update',nugget.flakes,nugget.scope,nugget.origin);
                //Holojam event
-               else if(json.type=='Event'){
+               else if(nugget.type=='EVENT'){
                   this.emit(
-                     json.flakes[0].label,json.flakes[0],
-                     json.scope,json.origin
+                     nugget.flakes[0].label,nugget.flakes[0],
+                     nugget.scope,nugget.origin
                   );
                   events++;
                }
 
                packetsReceived[1]++;
-               bytesReceived[1] += sizeof(json);
+               bytesReceived[1] += sizeof(nugget);
             });
          });
       }
 
       //Emit nuggets to web
-      this.SendToWeb = function(json){
-         if(!emitter)return;
-         io.emit('message',json);
+      this.SendToWeb = function(nugget){
+         if(!sending)return;
+         io.emit('message',nugget);
 
          packetsSent[1]++;
-         bytesSent[1] += sizeof(json);
+         bytesSent[1] += sizeof(nugget);
       };
    }
 
@@ -181,12 +181,12 @@ var Holojam = function(
    }
 
    this.BuildUpdate = (scope = 'Node', flakes) =>
-      BuildPacket(scope,'Update',flakes);
+      BuildPacket(scope,'UPDATE',flakes);
 
    this.BuildEvent = (scope = 'Node', flake) =>
-      BuildPacket(scope,'Event',[flake]);
+      BuildPacket(scope,'EVENT',[flake]);
    this.BuildNotification = (scope = 'Node', label = 'Notification') =>
-      BuildPacket(scope,'Event',[{label: label}]);
+      BuildPacket(scope,'EVENT',[{label: label}]);
 
    //Metrics
    setInterval(() => {
@@ -207,5 +207,5 @@ var Holojam = function(
 inherits(Holojam,EventEmitter);
 
 //Protocol <-> JSON conversion
-Holojam.prototype.Encode = (json) => Buffer.from(protocol.generate(json));
+Holojam.prototype.Encode = (nugget) => Buffer.from(protocol.generate(nugget));
 Holojam.prototype.Decode = (buffer) => protocol.parse(buffer);
