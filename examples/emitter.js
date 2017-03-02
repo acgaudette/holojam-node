@@ -1,5 +1,6 @@
 const holojam = require('holojam-node')(['emitter']);
 
+// Send an update every 256 ms
 setInterval(() => {
   holojam.Send(holojam.BuildUpdate('example', [
     {
@@ -21,6 +22,7 @@ setInterval(() => {
   ]));
 }, 256);
 
+// Send an event every second
 setInterval(() => {
   holojam.Send(holojam.BuildEvent('example', {
     label: 'my-event', text: 'some event data'
